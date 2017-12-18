@@ -48,6 +48,10 @@ namespace PX.Objects.SO
 
         #endregion
 
+        #region Errors
+        public const string SOOrderTypeSetupFailed = "Pricesheet currency setup missing for sales order type.";
+        #endregion
+
         public static string GetLocal(string message)
         {
             return PXLocalizer.Localize(message, typeof(MessagesPXPriceSheetCuryExt).FullName);
@@ -62,7 +66,7 @@ namespace PX.Objects.SO
 
         [PXDBString(5, IsUnicode = true, InputMask = ">LLLLL")]
         [PXUIField(DisplayName = MessagesPXPriceSheetCuryExt.PricesheetCurrency)]
-        [PXDefault(SOOrderEntryPXPriceSheetCuryExt.PriceSheetCuryID)]
+        //[PXDefault(SOOrderEntryPXPriceSheetCuryExt.PriceSheetCuryID)]
         [PXSelector(typeof(Currency.curyID))]
         public virtual String UsrPricesheetCuryID { get; set; }
         #endregion
@@ -100,22 +104,76 @@ namespace PX.Objects.SO
         #endregion
     }
 
+    public class SOOrderTypePXPriceSheetCuryExt : PXCacheExtension<SOOrderType>
+    {
+        #region UsrPricesheetCuryID
+        public abstract class usrPricesheetCuryID : PX.Data.IBqlField
+        {
+        }
+
+        /// <summary>
+        /// The identifier of the <see cref="Currency"/>,
+        /// which is applied to the documents of the customer.
+        /// </summary>
+        [PXDBString(5, IsUnicode = true)]
+        [PXSelector(typeof(Currency.curyID), CacheGlobal = true)]
+        [PXUIField(DisplayName = "Currency ID")]
+        public virtual String UsrPricesheetCuryID { get; set; }
+        #endregion
+        #region UsrPricesheetCuryRateTypeID
+        public abstract class usrPricesheetCuryRateTypeID : PX.Data.IBqlField
+        {
+        }
+
+        /// <summary>
+        /// The identifier of the currency rate type,
+        /// which is applied to the documents of the customer.
+        /// </summary>
+        [PXDBString(6, IsUnicode = true)]
+        [PXSelector(typeof(CurrencyRateType.curyRateTypeID))]
+        [PXUIField(DisplayName = "Curr. Rate Type ")]
+
+        public virtual String UsrPricesheetCuryRateTypeID { get; set; }
+        #endregion
+        #region UsrPricesheetAllowOverrideCury
+        public abstract class usrPricesheetAllowOverrideCury : PX.Data.IBqlField
+        {
+        }
+
+        /// <summary>
+        /// If set to <c>true</c>, indicates that the currency 
+        /// of customer documents (which is specified by <see cref="Customer.CuryID"/>)
+        /// can be overridden by a user during document entry.
+        /// /// </summary>
+        [PXDBBool()]
+        [PXUIField(DisplayName = "Enable Currency Override")]
+        public virtual Boolean? UsrPricesheetAllowOverrideCury { get; set; }
+        #endregion
+        #region UsrPricesheetAllowOverrideRate
+        public abstract class usrPricesheetAllowOverrideRate : PX.Data.IBqlField
+        {
+        }
+
+        /// <summary>
+        /// If set to <c>true</c>, indicates that the currency rate
+        /// for customer documents (which is calculated by the system 
+        /// from the currency rate history) can be overridden by a user 
+        /// during document entry.
+        /// </summary>
+        [PXDBBool()]
+        [PXUIField(DisplayName = "Enable Rate Override")]
+        public virtual Boolean? UsrPricesheetAllowOverrideRate { get; set; }
+        #endregion
+    }
+
     public class SOOrderEntryPXPriceSheetCuryExt : PXGraphExtension<SOOrderEntry>
     {
-
-        public const string PriceSheetCuryID = "GBP";
-
-        public class priceSheetCuryID : Constant<string>
-        {
-            public priceSheetCuryID() : base(PriceSheetCuryID) { }
-        }
         
         public PXSelect<CurrencyInfo, Where<CurrencyInfo.curyInfoID, Equal<Current<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryInfoID>>>> pricesheetcurrencyinfo;
 
         public void SOOrder_RowSelected(PXCache sender, PXRowSelectedEventArgs e, PXRowSelected del)
         {
             var row = (SOOrder)e.Row;
-
             if (row == null)
                 return;
 
@@ -123,16 +181,19 @@ namespace PX.Objects.SO
                 del(sender, e);
 
             var rowExt = PXCache<SOOrder>.GetExtension<SOOrderPXPriceSheetCuryExt>(row);
-
             if (rowExt == null)
                 return;
 
-            //var pricesheetUnitPriceDisplayName = String.Format("{0} ({1})", MessagesPXPriceSheetCuryExt.GetLocal(MessagesPXPriceSheetCuryExt.PricesheetUnitPrice), rowExt.UsrPricesheetCuryID);
-            ////PXUIFieldAttribute.SetDisplayName<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(Base.Transactions.Cache, pricesheetUnitPriceDisplayName);
-            //PXUIFieldAttribute.SetWarning<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(Base.Transactions.Cache, null, pricesheetUnitPriceDisplayName);
-            
+            var soOrderType = Base.soordertype.Current;
+            var soOrderTypeExt = PXCache<SOOrderType>.GetExtension<SOOrderTypePXPriceSheetCuryExt>(soOrderType);
+            if (soOrderType == null || soOrderTypeExt == null)
+                throw new PXSetupNotEnteredException<SOSetup>(MessagesPXPriceSheetCuryExt.SOOrderTypeSetupFailed);
 
+            bool pricesheetcuryenabled = soOrderTypeExt.UsrPricesheetAllowOverrideCury == true;
+
+			PXUIFieldAttribute.SetEnabled<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryID>(sender, row, pricesheetcuryenabled);
         }
+
         public void SOOrder_RowInserted(PXCache sender, PXRowInsertedEventArgs e, PXRowInserted del)
         {
             if (del != null)
@@ -143,14 +204,19 @@ namespace PX.Objects.SO
             if (row == null || rowExt == null)
                 return;
 
+            var soOrderType = Base.soordertype.Current;
+            var soOrderTypeExt = PXCache<SOOrderType>.GetExtension<SOOrderTypePXPriceSheetCuryExt>(soOrderType);
+
+            if (soOrderType == null || soOrderTypeExt == null)
+                throw new PXSetupNotEnteredException<SOSetup>(MessagesPXPriceSheetCuryExt.SOOrderTypeSetupFailed);
+
             if (PXAccess.FeatureInstalled<FeaturesSet.multicurrency>())
             {
                 if (e.ExternalCall || sender.GetValuePending<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryID>(row) == null)
-                {
-                    //CurrencyInfo info = CurrencyInfoAttribute.SetDefaults<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryInfoID>(sender, row);
+                { 
                     var info = new CurrencyInfo();
-                    info.CuryID = PriceSheetCuryID;
-                    info.CuryRateTypeID = "SPOT";
+                    info.CuryID = soOrderTypeExt.UsrPricesheetCuryID;
+                    info.CuryRateTypeID = soOrderTypeExt.UsrPricesheetCuryRateTypeID;
                     info.CuryEffDate = row.OrderDate;
 
                     info = pricesheetcurrencyinfo.Insert(info);
@@ -276,6 +342,32 @@ namespace PX.Objects.SO
             if (pricesheetCurrencyInfo == null || pricesheetCurrencyInfo.CuryInfoID != row.CuryInfoID)
             {
                 del(sender, e);
+            }
+            else
+            {
+                var soOrderType = Base.soordertype.Current;
+                var soOrderTypeExt = PXCache<SOOrderType>.GetExtension<SOOrderTypePXPriceSheetCuryExt>(soOrderType);
+
+                if (soOrderType == null || soOrderTypeExt == null)
+                    throw new PXSetupNotEnteredException<SOSetup>(MessagesPXPriceSheetCuryExt.SOOrderTypeSetupFailed);
+
+
+                CurrencyInfo info = e.Row as CurrencyInfo;
+                if (info != null)
+                {
+                    bool curyenabled = info.AllowUpdate(Base.Transactions.Cache);
+
+
+                    if (soOrderTypeExt.UsrPricesheetAllowOverrideRate != true)
+                    {
+                        curyenabled = false;
+                    }
+
+                    PXUIFieldAttribute.SetEnabled<CurrencyInfo.curyRateTypeID>(sender, info, curyenabled);
+                    PXUIFieldAttribute.SetEnabled<CurrencyInfo.curyEffDate>(sender, info, curyenabled);
+                    PXUIFieldAttribute.SetEnabled<CurrencyInfo.sampleCuryRate>(sender, info, curyenabled);
+                    PXUIFieldAttribute.SetEnabled<CurrencyInfo.sampleRecipRate>(sender, info, curyenabled);
+                }
             }
         }
 

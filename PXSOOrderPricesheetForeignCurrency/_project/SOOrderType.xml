@@ -1,0 +1,6 @@
+﻿<Table TableName="SOOrderType">
+    <Column TableName="SOOrderType" ColumnName="UsrPricesheetCuryID" ColumnType="string" AllowNull="True" MaxLength="5" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="SOOrderType" ColumnName="UsrPricesheetCuryRateTypeID" ColumnType="string" AllowNull="True" MaxLength="6" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="SOOrderType" ColumnName="UsrPricesheetAllowOverrideCury" ColumnType="bool" AllowNull="True" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="SOOrderType" ColumnName="UsrPricesheetAllowOverrideRate" ColumnType="bool" AllowNull="True" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+</Table>
