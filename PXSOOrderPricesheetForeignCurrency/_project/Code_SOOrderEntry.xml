@@ -1,0 +1,327 @@
+﻿<Graph ClassName="SOOrderEntry" Source="#CDATA" IsNew="True" FileType="ExistingGraph">
+    <CDATA name="Source"><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using Avalara.AvaTax.Adapter;
+using Avalara.AvaTax.Adapter.TaxService;
+using PX.CCProcessingBase;
+using PX.Common;
+using PX.Data;
+using PX.Objects.AP;
+using PX.Objects.AR;
+using PX.Objects.CA;
+using PX.Objects.CM;
+using PX.Objects.CR;
+using PX.Objects.CS;
+using PX.Objects.DR;
+using PX.Objects.EP;
+using PX.Objects.GL;
+using PX.Objects.IN;
+using PX.Objects.PM;
+using PX.Objects.PO;
+using PX.Objects.TX;
+using AvaMessage = Avalara.AvaTax.Adapter.Message;
+using POLine = PX.Objects.PO.POLine;
+using POOrder = PX.Objects.PO.POOrder;
+using System.Threading.Tasks;
+using CRLocation = PX.Objects.CR.Standalone.Location;
+using PX.Objects.AR.CCPaymentProcessing;
+using ARRegisterAlias = PX.Objects.AR.Standalone.ARRegisterAlias;
+using PX.Objects.Common;
+using PX.Objects.IN.Overrides.INDocumentRelease;
+using PX.Objects;
+using PX.Objects.SO;
+
+namespace PX.Objects.SO
+{
+    [PXLocalizable(MessagesPXPriceSheetCuryExt.Prefix)]
+    public static class MessagesPXPriceSheetCuryExt
+    {
+        public const string Prefix = "PXPriceSheetCuryExt Error";
+
+        #region Field Names
+        public const string PricesheetUnitPrice = "Pricesheet Unit Price";
+        public const string PricesheetCurrency = "Pricesheet Currency";
+
+        #endregion
+
+        public static string GetLocal(string message)
+        {
+            return PXLocalizer.Localize(message, typeof(MessagesPXPriceSheetCuryExt).FullName);
+        }
+    }
+    public class SOOrderPXPriceSheetCuryExt : PXCacheExtension<SOOrder>
+    {
+        #region UsrPricesheetCuryID
+        public abstract class usrPricesheetCuryID : PX.Data.IBqlField
+        {
+        }
+
+        [PXDBString(5, IsUnicode = true, InputMask = ">LLLLL")]
+        [PXUIField(DisplayName = MessagesPXPriceSheetCuryExt.PricesheetCurrency)]
+        [PXDefault(SOOrderEntryPXPriceSheetCuryExt.PriceSheetCuryID)]
+        [PXSelector(typeof(Currency.curyID))]
+        public virtual String UsrPricesheetCuryID { get; set; }
+        #endregion
+
+        #region UsrPricesheetCuryInfoID
+        public abstract class usrPricesheetCuryInfoID : PX.Data.IBqlField
+        {
+        }
+
+        [PXDBLong()]
+        [CurrencyInfo(CuryIDField = "UsrPricesheetCuryID", CuryRateField = "UsrPricesheetCuryRate")]
+        public virtual Int64? UsrPricesheetCuryInfoID { get; set; }
+        #endregion
+    }
+    public class SOLinePXPriceSheetCuryExt : PXCacheExtension<SOLine>
+    {
+        #region UsrPricesheetCuryInfoID
+        public abstract class usrPricesheetCuryInfoID : PX.Data.IBqlField
+        {
+        }
+
+        [PXDBLong()]
+        [CurrencyInfo(typeof(SOOrderPXPriceSheetCuryExt.usrPricesheetCuryInfoID), CuryIDField = "UsrPricesheetCuryID", CuryRateField = "UsrPricesheetCuryRate")]
+        public virtual Int64? UsrPricesheetCuryInfoID { get; set; }
+        #endregion
+
+        #region UsrPricesheetUnitPrice
+        public abstract class usrPricesheetUnitPrice : PX.Data.IBqlField
+        {
+        }
+
+        [PXDBDecimal]
+        [PXUIField(DisplayName = MessagesPXPriceSheetCuryExt.PricesheetUnitPrice, Visibility = PXUIVisibility.SelectorVisible)]
+        public virtual Decimal? UsrPricesheetUnitPrice { get; set; }
+        #endregion
+    }
+
+    public class SOOrderEntryPXPriceSheetCuryExt : PXGraphExtension<SOOrderEntry>
+    {
+
+        public const string PriceSheetCuryID = "GBP";
+
+        public class priceSheetCuryID : Constant<string>
+        {
+            public priceSheetCuryID() : base(PriceSheetCuryID) { }
+        }
+        
+        public PXSelect<CurrencyInfo, Where<CurrencyInfo.curyInfoID, Equal<Current<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryInfoID>>>> pricesheetcurrencyinfo;
+
+        public void SOOrder_RowSelected(PXCache sender, PXRowSelectedEventArgs e, PXRowSelected del)
+        {
+            var row = (SOOrder)e.Row;
+
+            if (row == null)
+                return;
+
+            if (del != null)
+                del(sender, e);
+
+            var rowExt = PXCache<SOOrder>.GetExtension<SOOrderPXPriceSheetCuryExt>(row);
+
+            if (rowExt == null)
+                return;
+
+            //var pricesheetUnitPriceDisplayName = String.Format("{0} ({1})", MessagesPXPriceSheetCuryExt.GetLocal(MessagesPXPriceSheetCuryExt.PricesheetUnitPrice), rowExt.UsrPricesheetCuryID);
+            ////PXUIFieldAttribute.SetDisplayName<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(Base.Transactions.Cache, pricesheetUnitPriceDisplayName);
+            //PXUIFieldAttribute.SetWarning<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(Base.Transactions.Cache, null, pricesheetUnitPriceDisplayName);
+            
+
+        }
+        public void SOOrder_RowInserted(PXCache sender, PXRowInsertedEventArgs e, PXRowInserted del)
+        {
+            if (del != null)
+                del(sender, e);
+
+            var row = (SOOrder)e.Row;
+            var rowExt = PXCache<SOOrder>.GetExtension<SOOrderPXPriceSheetCuryExt>(row);
+            if (row == null || rowExt == null)
+                return;
+
+            if (PXAccess.FeatureInstalled<FeaturesSet.multicurrency>())
+            {
+                if (e.ExternalCall || sender.GetValuePending<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryID>(row) == null)
+                {
+                    //CurrencyInfo info = CurrencyInfoAttribute.SetDefaults<SOOrderPXPriceSheetCuryExt.usrPricesheetCuryInfoID>(sender, row);
+                    var info = new CurrencyInfo();
+                    info.CuryID = PriceSheetCuryID;
+                    info.CuryRateTypeID = "SPOT";
+                    info.CuryEffDate = row.OrderDate;
+
+                    info = pricesheetcurrencyinfo.Insert(info);
+
+                    string message = PXUIFieldAttribute.GetError<CurrencyInfo.curyEffDate>(pricesheetcurrencyinfo.Cache, info);
+                    if (string.IsNullOrEmpty(message) == false)
+                    {
+                        sender.RaiseExceptionHandling<SOOrder.orderDate>(row, row.OrderDate, new PXSetPropertyException(message, PXErrorLevel.Warning));
+                    }
+
+                    if (info != null)
+                    {
+                        rowExt.UsrPricesheetCuryInfoID = info.CuryInfoID;
+                        rowExt.UsrPricesheetCuryID = info.CuryID;
+                    }
+                }
+            }
+        }
+
+        protected virtual void SOLine_UsrPricesheetUnitPrice_FieldDefaulting(PXCache sender, PXFieldDefaultingEventArgs e)
+        {
+            var row = (SOLine)e.Row;
+            var rowExt = PXCache<SOLine>.GetExtension<SOLinePXPriceSheetCuryExt>(row);
+
+            if (row == null || rowExt == null)
+                return;
+
+
+            if (row.TranType == INTranType.Transfer)
+            {
+                rowExt.UsrPricesheetUnitPrice = 0;
+            }
+            else if (row.InventoryID != null && row.ManualPrice != true && row.IsFree != true && !sender.Graph.IsCopyPasteContext)
+            {
+                string customerPriceClass = ARPriceClass.EmptyPriceClass;
+                Location c = Base.location.Select();
+                if (c != null && !string.IsNullOrEmpty(c.CPriceClassID))
+                    customerPriceClass = c.CPriceClassID;
+
+                decimal? price =
+                    ARSalesPriceMaint.CalculateSalesPrice(
+                        sender,
+                        customerPriceClass,
+                        row.CustomerID,
+                        row.InventoryID,
+                        this.pricesheetcurrencyinfo.Select(),
+                        row.Qty,
+                        row.UOM,
+                        Base.Document.Current.OrderDate.Value,
+                        false);
+
+                e.NewValue = price; 
+               
+            }
+            else
+                e.NewValue = rowExt.UsrPricesheetUnitPrice;
+        }
+
+        protected virtual void SOLine_CuryUnitPrice_FieldDefaulting(PXCache sender, PXFieldDefaultingEventArgs e, PXFieldDefaulting del)
+        {
+            var row = (SOLine)e.Row;
+
+            if (row == null)
+                return;
+
+            sender.SetDefaultExt<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(row);
+            var pricesheetUnitPrice = (decimal?)sender.GetValue<SOLinePXPriceSheetCuryExt.usrPricesheetUnitPrice>(row);
+
+            if(!pricesheetUnitPrice.HasValue && del != null)
+            {
+                del(sender, e);
+            }
+            else
+            {
+                var curyUnitPrice = ConvertPricesheetToCuryUnitPrice<SOLinePXPriceSheetCuryExt.usrPricesheetCuryInfoID, SOLine.curyInfoID>(sender, row, pricesheetUnitPrice.Value);
+                e.NewValue = curyUnitPrice;
+            }
+        }
+
+        protected virtual void SOLine_UsrPricesheetUnitPrice_FieldUpdated(PXCache sender, PXFieldUpdatedEventArgs e, PXFieldUpdated del)
+        {
+            if (del != null)
+                del(sender, e);
+
+            var row = (SOLine)e.Row;
+            var rowExt = PXCache<SOLine>.GetExtension<SOLinePXPriceSheetCuryExt>(row);
+
+            if (row == null || rowExt == null)
+                return;
+
+            var curyUnitPrice = ConvertPricesheetToCuryUnitPrice<SOLinePXPriceSheetCuryExt.usrPricesheetCuryInfoID, SOLine.curyInfoID>(sender, row, rowExt.UsrPricesheetUnitPrice ?? 0M);
+            sender.SetValueExt<SOLine.curyUnitPrice>(row, curyUnitPrice);
+        }
+
+        protected virtual void SOLine_RowSelected(PXCache sender, PXRowSelectedEventArgs e, PXRowSelected del)
+        {
+            var row = (SOLine)e.Row;
+
+            if (row == null)
+                return;
+
+            if (del != null)
+                del(sender, e);
+
+            var rowExt = PXCache<SOLine>.GetExtension<SOLinePXPriceSheetCuryExt>(row);
+
+            if (rowExt == null)
+                return;
+
+            PXUIFieldAttribute.SetEnabled<SOLine.curyUnitPrice>(sender, row, !rowExt.UsrPricesheetUnitPrice.HasValue);
+
+        }
+
+        protected virtual void CurrencyInfo_RowSelected(PXCache sender, PXRowSelectedEventArgs e, PXRowSelected del)
+        {
+            var row = (CurrencyInfo)e.Row;
+
+            if (row == null)
+                return;
+
+            var pricesheetCurrencyInfo = (CurrencyInfo)pricesheetcurrencyinfo.Select();
+
+            if (pricesheetCurrencyInfo == null || pricesheetCurrencyInfo.CuryInfoID != row.CuryInfoID)
+            {
+                del(sender, e);
+            }
+        }
+
+        protected virtual void CurrencyInfo_RowUpdated(PXCache sender, PXRowUpdatedEventArgs e, PXRowUpdated del)
+        {
+            var row = (CurrencyInfo)e.Row;
+
+            if (row == null)
+                return;
+
+            var pricesheetCurrencyInfo = (CurrencyInfo)pricesheetcurrencyinfo.Select();
+
+            if (pricesheetCurrencyInfo == null || pricesheetCurrencyInfo.CuryInfoID != row.CuryInfoID)
+            {
+                del(sender, e);
+            }
+            else
+            {
+                foreach(SOLine line in Base.Transactions.Select())
+                {
+                    Base.Transactions.Current = line;
+
+                    var lineExt = PXCache<SOLine>.GetExtension<SOLinePXPriceSheetCuryExt>(line);
+                    if (lineExt.UsrPricesheetUnitPrice.HasValue)
+                    {
+                        var curyUnitPrice = ConvertPricesheetToCuryUnitPrice<SOLinePXPriceSheetCuryExt.usrPricesheetCuryInfoID, SOLine.curyInfoID>(sender, line, lineExt.UsrPricesheetUnitPrice ?? 0M);
+                        line.CuryUnitPrice = curyUnitPrice;
+                        Base.Transactions.Update(line);
+                    }
+                }
+            }
+        }
+
+        public static decimal ConvertPricesheetToCuryUnitPrice<TPricesheetCuryInfoID, TCuryInfoID>(PXCache sender, object row, decimal pricesheetUnitPrice)
+            where TPricesheetCuryInfoID : IBqlField
+            where TCuryInfoID : IBqlField
+        {
+            decimal baseUnitPrice;
+            PXDBCurrencyAttribute.CuryConvBase<SOLinePXPriceSheetCuryExt.usrPricesheetCuryInfoID>(sender, row, pricesheetUnitPrice, out baseUnitPrice);
+            decimal curyUnitPrice;
+            PXDBCurrencyAttribute.CuryConvCury<SOLine.curyInfoID>(sender, row, baseUnitPrice, out curyUnitPrice);
+
+            return curyUnitPrice;
+        }
+    }
+}
+
+]]></CDATA>
+</Graph>

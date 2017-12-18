@@ -1,0 +1,4 @@
+﻿<Table TableName="SOLine">
+    <Column TableName="SOLine" ColumnName="UsrPricesheetCuryInfoID" ColumnType="bigint" AllowNull="True" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="SOLine" ColumnName="UsrPricesheetUnitPrice" ColumnType="decimal" AllowNull="True" DecimalPrecision="2" DecimalLength="19" IsNewColumn="True" IsUnicode="True" />
+</Table>

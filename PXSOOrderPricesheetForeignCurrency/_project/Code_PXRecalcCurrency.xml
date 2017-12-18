@@ -1,0 +1,56 @@
+﻿<Graph ClassName="PXRecalcCurrency" Source="#CDATA" IsNew="True" FileType="NewGraph">
+    <CDATA name="Source"><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Text;
+using PX.Common;
+using PX.Data;
+using PX.Objects.CS;
+using PX.Objects.IN;
+using PX.Objects.AP;
+using PX.Objects.SO;
+using PX.Objects.GL;
+using PX.Objects.CM;
+using PX.Objects.AR;
+using PX.Objects.CR;
+namespace PXCurrencyRateExt
+{
+  public class PXRecalcCurrency : PXGraph<PXRecalcCurrency>
+  {
+        public PXCancel<SOOrder> Cancel;
+        public PXProcessing<SOOrder,
+                        Where2<Where<SOOrder.orderType, Equal<SOOrderTypeConstants.salesOrder>, Or<SOOrder.orderType, Equal<SOOrderTypeConstants.quoteOrder>>>,
+                        And<SOOrder.status, Equal<SOOrderStatus.open>>>> Orders;
+
+        public PXRecalcCurrency()
+        {
+            Orders.SetProcessCaption("Process");
+            Orders.SetProcessAllCaption("Process All");
+            Orders.SetProcessDelegate(delegate (List<SOOrder> list)
+            {
+                RecalcCurrency(list);
+            });
+        }
+
+        public static void RecalcCurrency(List<SOOrder> orders)
+        {
+         
+            foreach (SOOrder order in orders)
+            {
+                SOOrderEntry graph = PXGraph.CreateInstance<SOOrderEntry>();
+                var graphExt = graph.GetExtension<SOOrderEntryPXPriceSheetCuryExt>();
+
+                graph.CurrentDocument.Current = order;
+
+                var pricesheetCurrencyInfo = (CurrencyInfo)graphExt.pricesheetcurrencyinfo.Select();
+                pricesheetCurrencyInfo.CuryEffDate = order.OrderDate;
+                graphExt.pricesheetcurrencyinfo.Update(pricesheetCurrencyInfo);
+
+                graph.Actions.PressSave();
+
+            }
+        }
+    }
+}]]></CDATA>
+</Graph>

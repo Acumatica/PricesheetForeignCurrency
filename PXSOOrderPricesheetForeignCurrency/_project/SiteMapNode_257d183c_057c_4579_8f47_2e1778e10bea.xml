@@ -1,0 +1,13 @@
+﻿<SiteMapNode>
+    <data-set>
+        <relations format-version="3" relations-version="20160101" main-table="SiteMap" />
+        <layout>
+            <table name="SiteMap" />
+        </layout>
+        <data>
+            <SiteMap>
+                <row Position="5" Title="Recalculate Prices (Currency)" Url="~/Pages/RC/RC507777.aspx" Expanded="0" IsFolder="0" ScreenID="RC507777" NodeID="257d183c-057c-4579-8f47-2e1778e10bea" ParentID="38c94bdb-adfe-440d-be39-ab0b5e2a2a5f" />
+            </SiteMap>
+        </data>
+    </data-set>
+</SiteMapNode>

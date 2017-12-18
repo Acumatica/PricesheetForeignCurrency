@@ -1,0 +1,4 @@
+﻿<Table TableName="SOOrder">
+    <Column TableName="SOOrder" ColumnName="UsrPricesheetCuryInfoID" ColumnType="bigint" AllowNull="True" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="SOOrder" ColumnName="UsrPricesheetCuryID" ColumnType="string" AllowNull="True" MaxLength="5" IsNewColumn="True" IsUnicode="True" />
+</Table>
